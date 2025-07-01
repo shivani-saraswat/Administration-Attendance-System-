@@ -28,7 +28,14 @@ import pandas as pd
 import sqlite3
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel
-import face_recognition
+import dlib
+
+logger = logging.getLogger(__name__)
+
+# Initialize dlib models for HOG face detection and face encoding
+detector = dlib.get_frontal_face_detector()
+sp = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+facerec = dlib.face_recognition_model_v1('dlib_face_recognition_resnet_model_v1.dat')
 
 # At startup or schedule this with a cron job / background task
 auto_mark_all_present_on_off_days()
@@ -218,7 +225,6 @@ async def register_employee(data: RegisterData, current_user: Depends = Depends(
         #     raise HTTPException(status_code=400, detail="User already exists")
         hashed_password = password_hash(data.password)
         emp_id = get_incremented_empId()
-        insert_into_userDB(data.reportingTo,data.joiningDate,data.location,data.email, emp_id, data.fullName, data.department, hashed_password, data.role)
 
         # Defensive: Check imageData
         if not data.imageData or "," not in data.imageData:
@@ -238,21 +244,27 @@ async def register_employee(data: RegisterData, current_user: Depends = Depends(
             print(f"Failed to save debug image: {e}")
         if frame is None or len(frame.shape) != 3 or frame.dtype != np.uint8:
             return JSONResponse(content={"message": "Invalid image format. Please try again."}, status_code=400)
-        # Convert to RGB for face_recognition
+        # Convert to RGB for dlib
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        face_locations = face_recognition.face_locations(rgb_frame)
-        if not face_locations:
-            return JSONResponse(content={"message": "No face detected. Try again."}, status_code=400)
-        face_encs = face_recognition.face_encodings(rgb_frame, face_locations)
-        if not face_encs:
-            return JSONResponse(content={"message": "No face detected. Try again."}, status_code=400)
-        face_en = face_encs[0].tobytes()
         
+        # Use dlib's HOG face detector
+        dets = detector(rgb_frame, 1)
+        if not dets:
+            return JSONResponse(content={"message": "No face detected. Try again."}, status_code=400)
+        
+        # Get face landmarks and compute face descriptor
+        shape = sp(rgb_frame, dets[0])
+        face_descriptor = facerec.compute_face_descriptor(rgb_frame, shape)
+        face_en = np.array(face_descriptor, dtype=np.float64).tobytes()
+        
+        # Insert user first, then save face to DB
+        insert_into_userDB(data.reportingTo, data.joiningDate, data.location, data.email, emp_id, data.fullName, data.department, hashed_password, data.role)
         save_face_to_db(
             emp_id,
             frame,  
             face_en
         )
+
         return {"message": f"{data.fullName} registered successfully With Employee ID: {emp_id}!"}
     except Exception as e:
         # Log the error for debugging
@@ -274,8 +286,10 @@ async def delete_employee(
     return {"message": result}
 
 @app.get("/shivani")
-def a():
-    return HTMLResponse("Hello world")
+def a(date: str):
+    return compare_is_off_day(date_str=date)
+
+
 @app.get("/mark_attendance")
 def mark_attendance_page():
     with open("mark_attendance.html", "r", encoding="utf-8") as file:
@@ -358,15 +372,29 @@ async def mark_attendance_api(file: UploadFile = File(...)):
                     status_code=400
                 )        
         known_encodings, metadata = get_face_encodings_from_db()
-        face_locations = face_recognition.face_locations(frame)
-        face_encs = face_recognition.face_encodings(frame, face_locations)
-        for face_encoding in face_encs:
-            matches = face_recognition.compare_faces(known_encodings, face_encoding)
-            if True in matches:
-                matched_index = matches.index(True)
-                sr_no = metadata[matched_index][0]
+        
+        # Convert to RGB for dlib
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Use dlib's HOG face detector
+        dets = detector(rgb_frame, 1)
+        if not dets:
+            return JSONResponse(content={"message": "No face detected"}, status_code=400)
+        
+        # Get face landmarks and compute face descriptor
+        shape = sp(rgb_frame, dets[0])
+        face_descriptor = facerec.compute_face_descriptor(rgb_frame, shape)
+        face_encoding = np.array(face_descriptor, dtype=np.float64)
+        
+        # Compare with known faces
+        for i, known_encoding in enumerate(known_encodings):
+            # Calculate Euclidean distance for face comparison
+            distance = np.linalg.norm(face_encoding - known_encoding)
+            if distance < 0.4:  # Threshold for face matching (lower = stricter)
+                sr_no = metadata[i][0]
                 mark_attendance(sr_no)
                 return {"message": "Attendance marked"}
+        
         return JSONResponse(content={"message": "Face not recognized"}, status_code=404)
     except Exception as e:
         logger.exception("Attendance marking failed")
@@ -607,11 +635,18 @@ async def check_duplicate_face(data: ImageData, token: str = Depends(oauth2_sche
         nparr = np.frombuffer(img_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-        new_encodings = face_recognition.face_encodings(img)
-        if not new_encodings:
+        # Convert to RGB for dlib
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Use dlib's HOG face detector
+        dets = detector(rgb_img, 1)
+        if not dets:
             raise HTTPException(status_code=400, detail="No face detected.")
 
-        new_encoding = new_encodings[0]
+        # Get face landmarks and compute face descriptor
+        shape = sp(rgb_img, dets[0])
+        face_descriptor = facerec.compute_face_descriptor(rgb_img, shape)
+        new_encoding = np.array(face_descriptor, dtype=np.float64)
 
         # Load all stored face encodings from DB
         conn = sqlite3.connect('faces.db')
@@ -622,8 +657,9 @@ async def check_duplicate_face(data: ImageData, token: str = Depends(oauth2_sche
 
         for row in rows:
             stored_encoding = np.frombuffer(row[0], dtype=np.float64)
-            matches = face_recognition.compare_faces([stored_encoding], new_encoding)
-            if any(matches):
+            # Calculate Euclidean distance for face comparison
+            distance = np.linalg.norm(new_encoding - stored_encoding)
+            if distance < 0.4:  # Threshold for face matching (lower = stricter)
                 return {"exists": True}
 
         return {"exists": False}

@@ -32,7 +32,7 @@ def init_db():
             date TEXT,
             in_time TEXT,
             out_time TEXT,
-            status TEXT DEFAULT 'Present',
+            status TEXT DEFAULT 'Absent',
             FOREIGN KEY(SrNo) REFERENCES users(SrNo)
         )
     ''')
@@ -120,22 +120,27 @@ def is_off_day():
     return today in india_holidays or today.weekday() >= 5 
     #   # 5 = Saturday, 6 = Sunday
 
-# def compare_is_off_day(date_str):
-    # date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
+def compare_is_off_day(date_str):
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d").date()
     
     # Create the India holiday calendar for a range of years if needed
-    # india_holidays = holidays.country_holidays('IN')  # No 'year' parameter
+    india_holidays = holidays.country_holidays('IN')  # No 'year' parameter
     
     # Return True if it's a weekend or a holiday
-    # return date_obj in india_holidays or date_obj.weekday() >= 5 
+    return date_obj in india_holidays or date_obj.weekday() >= 5 
 
 # --- Modified Attendance Marking ---
 
 def mark_attendance(SrNo):
     print(SrNo)
+    # now = datetime.now()
     now = datetime.now()
-    current_date = now.strftime("%Y-%m-%d")
-    current_time = now.strftime("%H:%M:%S")
+    custom_date = datetime(2025, 7, 6, now.hour, now.minute, now.second, now.microsecond)
+    print(custom_date)
+    # current_date = now.strftime("%Y-%m-%d")
+    current_date = custom_date.strftime("%Y-%m-%d")
+    current_time = custom_date.strftime("%H:%M:%S")
+    # current_time = now.strftime("%H:%M:%S")
 
     conn = sqlite3.connect('faces.db')
     cursor = conn.cursor()
@@ -187,7 +192,7 @@ def auto_mark_all_present_on_off_days():
     today = datetime.now().strftime("%Y-%m-%d")
 
     # Get all employee SrNo
-    cursor.execute("SELECT SrNo FROM faces")
+    cursor.execute("SELECT SrNo FROM users")
     srnos = [row[0] for row in cursor.fetchall()]
 
     for srno in srnos:
