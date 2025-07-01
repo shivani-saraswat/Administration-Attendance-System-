@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mark Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --success-color: #4cc9f0;
+      --light-color: #f8f9fa;
+      --dark-color: #212529;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+
+    .main-content {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .main-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    }
+
+    h3 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: var(--dark-color);
+      font-weight: 600;
+      position: relative;
+      padding-bottom: 15px;
+    }
+
+    h3::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background: var(--primary-color);
+      border-radius: 3px;
+    }
+
+    .video-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 20px 0;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    video {
+      width: 100%;
+      display: block;
+      background-color: var(--dark-color);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+      border-color: var(--secondary-color);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background-color: white;
+      color: var(--dark-color);
+      border: 1px solid #dee2e6;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f8f9fa;
+      color: var(--dark-color);
+      transform: translateY(-2px);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+      color: #6c757d;
+      font-size: 14px;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #28a745;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        margin: 20px;
+        padding: 30px 20px;
+      }
+      
+      .btn-group {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Main Content -->
+  <div class="main-content">
+      <img src="/static/image.png" alt="WM-Admin Logo" style="height: 40px; vertical-align: middle;">
+    <h3><i class="fas fa-camera me-2"></i>Mark Attendance</h3>
+    
+    <div class="video-container">
+      <div class="video-wrapper">
+        <video id="video" autoplay playsinline></video>
+      </div>
+      
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span>Camera is ready</span>
+      </div>
+      
+      <div class="btn-group">
+        <a href="/welcome" class="btn btn-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Back to Main Page
+        </a>
+        <button class="btn btn-primary" onclick="markAttendance()">
+          <i class="fas fa-check-circle me-1"></i> Mark Attendance
+        </button>
+      </div>
+      
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p class="mt-2">Processing your attendance...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 1. Your office's coordinates (in decimal degrees)
+    const officeLat = 28.62863423806171;
+    const officeLng = 77.38047838296288; 
+    const maxDistanceMeters = 100; // 100 m threshold
+  
+    let videoStream = null;
+  
+    function startCamera() {
+      const video = document.getElementById("video");
+      navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: "user" 
+        } 
+      })
+        .then(stream => {
+          videoStream = stream;
+          video.srcObject = stream;
+        })
+        .catch(err => {
+          console.error("Camera error:", err);
+          showAlert("Cannot access camera. Please ensure you've granted camera permissions.", "danger");
+        });
+    }
+  
+    function stopCamera() {
+      if (videoStream) {
+        videoStream.getTracks().forEach(t => t.stop());
+        videoStream = null;
+      }
+    }
+  
+    // Haversine formula to compute distance between two lat/lng points
+    function distanceInMeters(lat1, lon1, lat2, lon2) {
+      const toRad = deg => deg * Math.PI / 180;
+      const R = 6371000; // Earth radius in meters
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon/2)**2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+    
+    function showAlert(message, type = "success") {
+      // Remove any existing alerts
+      const existingAlert = document.querySelector('.alert');
+      if (existingAlert) {
+        existingAlert.remove();
+      }
+      
+      const alert = document.createElement('div');
+      alert.className = `alert alert-${type} mt-3`;
+      alert.innerHTML = `
+        <div class="d-flex align-items-center">
+          <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'} me-2"></i>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      // Add some styling
+      alert.style.borderLeft = `4px solid ${type === 'success' ? '#28a745' : '#dc3545'}`;
+      alert.style.borderRadius = '4px';
+      alert.style.animation = 'fadeIn 0.3s ease-in-out';
+      
+      document.querySelector('.video-container').appendChild(alert);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        alert.style.animation = 'fadeOut 0.3s ease-in-out';
+        setTimeout(() => alert.remove(), 300);
+      }, 5000);
+    }
+  
+    async function markAttendance() {
+      const video = document.getElementById("video");
+      const loading = document.getElementById("loading");
+      
+      // Add dimension validation
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        showAlert("Camera not ready. Please wait and try again.", "danger");
+        return;
+      }
+      
+      // Show loading indicator
+      loading.style.display = 'block';
+      
+      // 2. Check geolocation first
+      if (!navigator.geolocation) {
+        loading.style.display = 'none';
+        showAlert("Geolocation not supported by your browser.", "danger");
+        return;
+      }
+  
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const { latitude, longitude } = pos.coords;
+        const dist = distanceInMeters(latitude, longitude, officeLat, officeLng);
+  
+        if (dist > maxDistanceMeters) {
+          loading.style.display = 'none';
+          showAlert(`You are ${Math.round(dist)} m away from office. Attendance only allowed within ${maxDistanceMeters} m.`, "danger");
+          return;
+        }
+  
+        // 3. If within range, proceed to snapshot + upload
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        canvas.getContext("2d").drawImage(video, 0, 0);
+  
+        canvas.toBlob(async blob => {
+          // Add type validation
+          if (!blob || blob.size === 0) {
+            loading.style.display = 'none';
+            showAlert("Failed to capture image. Please try again.", "danger");
+            return;
+          }
+          
+          const formData = new FormData();
+          formData.append("file", blob, "snapshot.jpg");
+          
+          try {
+            const response = await fetch("/mark_attendance", {
+              method: "POST",
+              body: formData
+            });
+            
+            const result = await response.json();
+            showAlert(result.message || "Attendance marked successfully!", "success");
+          } catch (err) {
+            console.error(err);
+            showAlert("Error marking attendance. Please try again.", "danger");
+          } finally {
+            loading.style.display = 'none';
+            stopCamera();
+            setTimeout(startCamera, 500);
+          }
+        }, "image/jpeg", 0.9);
+        
+      }, err => {
+        console.error("Geo error:", err);
+        loading.style.display = 'none';
+        showAlert("Unable to retrieve your location. Please ensure location services are enabled.", "danger");
+      }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
+    }
+  
+    window.addEventListener("load", startCamera);
+    window.addEventListener("beforeunload", stopCamera);
+  </script>
+</body>
+</html>

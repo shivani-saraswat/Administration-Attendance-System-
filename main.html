@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="./static/app.css">
+</head>
+
+<body>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <img src="/static/webmobril-IT-White-logo.png" alt="WM-Admin Logo" style="height: 40px; vertical-align: middle;">
+    </div>
+    <ul>
+      <li><a href="loader.html?page=dashboard" class="active"><i class="fas fa-house"></i> Dashboard</a></li>
+      <li><a href="loader.html?page=register"><i class="fas fa-user-plus"></i> Register Face</a></li>
+      <li><a href="loader.html?page=delete"><i class="fas fa-user-minus"></i> Delete Face</a></li>
+      <li><a href="loader.html?page=faces"><i class="fas fa-users"></i> Show Faces</a></li>
+      <li>
+        <a href="#" onclick="toggleExportMenu()" id="exportMenuBtn">
+          <i class="fas fa-file-export"></i> Export Data
+        </a>
+        <ul class="submenu" id="exportSubmenu">
+          <li><a href="loader.html?page=spreadsheet" id="spreadsheetBtn"><i class="fas fa-calendar-alt"></i> View Spreadsheet</a></li>
+          <li><a href="loader.html?page=excel" id="excelBtn"><i class="fas fa-file-excel"></i> Download Excel</a></li>
+        </ul>
+      </li>
+      <li><a href="loader.html?page=search_attendence"><i class="fas fa-search"></i> Search Attendance</a></li>
+      <li><a href="#" onclick="logoutUser(event)"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+    </ul>
+  </div>
+  <!-- Toggle Button -->
+  <button id="toggleSidebarBtn" class="d-md-none">
+    <i class="fas fa-bars"></i>
+  </button>
+  <div class="main-content">
+    <div class="container">
+      <div>
+        <h4 class="mb-4 fw-bold">Admin Dashboard</h4>
+
+        <!-- Filters -->
+        <div class="row dashboard-row col-12">
+          <div class="col-md-3 mb-3"><input type="date" id="filterDate" class="form-control" /></div>
+          <div class="col-md-3">
+            <select class="form-select" id="filterDepartment">
+              <option value="All">All Deparments</option>
+              <option value="HR">HR</option>
+              <option value="Engineering">Engineering</option>
+              <option value="Finance">Finance</option>
+              <option value="Sales">Sales</option>
+              <option value="Marketing">Marketing</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="row g-4 text-center mb-4 col-12 mt-2 justify-content-center">
+          <div class="col">
+            <div class="card-box h-100">
+              <h6>Total Employees</h6>
+              <p id="totalEmployees">-</p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card-box h-100">
+              <h6>Total Employees Present</h6>
+              <p id="presentEmployees">-</p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card-box h-100">
+              <h6>Total Employees Absent</h6>
+              <p id="absentEmployees">-</p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card-box h-100">
+              <h6>Attendance Rate</h6>
+              <p id="attendanceRate">-</p>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card-box h-100">
+              <h6>Absent Rate</h6>
+              <p id="absentRate">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance Tables -->
+        <div class="row mb-4">
+          <div class="col-12 mb-4">
+            <div class="card-box h-100">
+              <h6 class="text-start mb-3">Attendance Status</h6>
+              <div class="row">
+                <!-- On Time -->
+                <div class="col-md-4">
+                  <h6 class="mb-2 text-center">On Time</h6>
+                  <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-bordered table-hover table-sm mb-0">
+                      <thead class="table-light sticky-top bg-white">
+                        <tr>
+                          <th>Name</th>
+                          <th>Time</th>
+                        </tr>
+                      </thead>
+                      <tbody id="onTimeTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Late Arrivals -->
+                <div class="col-md-4">
+                  <h6 class="mb-2 text-center">Late Arrivals</h6>
+                  <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-bordered table-hover table-sm mb-0">
+                      <thead class="table-light sticky-top bg-white">
+                        <tr>
+                          <th>Name</th>
+                          <th>Time</th>
+                        </tr>
+                      </thead>
+                      <tbody id="lateArrivalsTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Not Yet In -->
+                <div class="col-md-4">
+                  <h6 class="mb-2 text-center" id="notInLabel">Not Yet In</h6>
+                  <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-bordered table-hover table-sm mb-0">
+                      <thead class="table-light sticky-top bg-white">
+                        <tr>
+                          <th>Name</th>
+                          <th>Time</th>
+                        </tr>
+                      </thead>
+                      <tbody id="notYetInTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bar Chart -->
+          <div class="col-12">
+            <div class="card-box">
+              <h6 class="text-start">Attendance by Department</h6>
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let barChartInstance = null;
+    function initDashboard() {
+      // Sidebar Toggle
+      const toggleBtn = document.getElementById("toggleSidebarBtn");
+      const sidebar = document.getElementById("sidebar");
+      if (toggleBtn && sidebar) {
+        toggleBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          sidebar.classList.toggle("show");
+        });
+        // Hide sidebar when clicking outside on small screens
+        document.addEventListener("click", function (e) {
+          if (
+            window.innerWidth <= 991 &&
+            !sidebar.contains(e.target) &&
+            !toggleBtn.contains(e.target)
+          ) {
+            sidebar.classList.remove("show");
+          }
+        });
+      }
+
+      // Export submenu buttons
+      // document.getElementById('spreadsheetBtn')?.addEventListener('click', function () {
+      //   if (!isExportEnabled) return;
+      //   window.open('exported_attendance.xlsx', '_blank');
+      // });
+
+      document.getElementById('excelBtn')?.addEventListener('click', async function () {
+        if (!isExportEnabled) return;
+        try {
+          const token = localStorage.getItem("access_token");
+          const response = await fetch('/export/excel', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (!response.ok) throw new Error('Download failed');
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'attendance_report.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        } catch (error) {
+          console.error('Error downloading file:', error);
+          alert('Failed to download Excel file');
+        }
+      });
+
+      // Load dashboard data
+      loadDashboardData();
+      loadAttendanceTables();
+
+      // Export submenu logic
+      let isExportEnabled = false;
+      window.toggleExportMenu = function () {
+        const submenu = document.getElementById('exportSubmenu');
+        isExportEnabled = !isExportEnabled;
+        submenu.style.display = isExportEnabled ? 'block' : 'none';
+        submenu.classList.toggle('enabled', isExportEnabled);
+      };
+
+      // Update "Not Yet In" label based on date
+      const dateInput = document.getElementById('filterDate');
+      const departmentInput = document.getElementById('filterDepartment');
+      const notInLabel = document.getElementById('notInLabel');
+      function updateLabelByDate() {
+        const selectedDate = new Date(dateInput.value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        selectedDate.setHours(0, 0, 0, 0);
+        notInLabel.textContent = selectedDate.getTime() === today.getTime() ? 'Not Yet In' : 'Absent';
+      }
+      dateInput.addEventListener('change', function() {
+        updateLabelByDate();
+        loadDashboardData();
+        loadAttendanceTables();
+      });
+      departmentInput.addEventListener('change', function() {
+        loadDashboardData();
+        loadAttendanceTables();
+      });
+      // Set today's date as default for the date input
+      const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      dateInput.value = formattedDate;
+      // Initial load (if date is pre-filled)
+      loadAttendanceTables();
+      loadDashboardData();
+    }
+
+    async function loadDashboardData() {
+      try {
+        const token = localStorage.getItem("access_token");
+        const date = document.getElementById('filterDate').value;
+        const department = document.getElementById('filterDepartment').value;
+        let url = `/api/admin_dashboard_data?date=${encodeURIComponent(date)}`;
+        url += `&department=${encodeURIComponent(department)}`;
+        const res = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!res.ok) throw new Error('Failed to fetch dashboard data');
+        const data = await res.json();
+        document.getElementById('totalEmployees').textContent = data.total_employees;
+        document.getElementById('presentEmployees').textContent = data.total_present;
+        document.getElementById('absentEmployees').textContent = data.total_absent;
+        document.getElementById('attendanceRate').textContent = data.attendance_rate.toFixed(2) + '%';
+        document.getElementById('absentRate').textContent = data.absent_rate.toFixed(2) + '%';
+
+        // Bar chart
+        const ctx = document.getElementById('barChart').getContext('2d');
+        const labels = data.attendance_by_department.map(d => d.department);
+        const values = data.attendance_by_department.map(d => d.count);
+        if (barChartInstance) barChartInstance.destroy();
+        barChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: values,
+              backgroundColor: '#2762a0',
+            }]
+          },
+          options: {
+            scales: { x: { beginAtZero: true } },
+            plugins: { legend: { display: false } }
+          }
+        });
+      } catch (err) {
+        console.error("Error loading dashboard data:", err);
+      }
+    }
+
+    async function loadAttendanceTables() {
+      try {
+        const date = document.getElementById('filterDate').value;
+        const department = document.getElementById('filterDepartment').value;
+        const token = localStorage.getItem("access_token");
+        let url = `/attendance-list?date=${encodeURIComponent(date)}`;
+        if (department && department !== 'All') {
+          url += `&department=${encodeURIComponent(department)}`;
+        }
+        const res = await fetch(url, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        const { onTime, late, absent } = await res.json();
+        const fillTable = (tableId, data) => {
+          const tbody = document.getElementById(tableId);
+          tbody.innerHTML = "";
+          data.forEach(emp => {
+            const row = document.createElement("tr");
+            row.innerHTML = `<td>${emp.name}</td><td>${emp.time || '-'}</td>`;
+            tbody.appendChild(row);
+          });
+        };
+        fillTable("onTimeTableBody", onTime);
+        fillTable("lateArrivalsTableBody", late);
+        fillTable("notYetInTableBody", absent);
+      } catch (err) {
+        console.error("Error loading attendance tables:", err);
+      }
+    }
+
+    // Call the dashboard initializer directly
+    initDashboard();
+
+    function registerFace() { window.location.href = "/admindashboard/register"; }
+
+    // function deleteFace() {
+    //   const id = prompt("Enter Employee ID to delete:");
+    //   if (id) {
+    //     fetch(`/delete/${id}`, { method: "DELETE" })
+    //       .then(res => res.ok ? alert("Deleted successfully.") : alert("Failed to delete."))
+    //       .catch(() => alert("Error occurred."));
+    //   }
+    // }
+
+    // function showFaces() {
+    //   window.location.href = "/faces";
+    // }
+
+    // function searchAttendance() {
+    //   const name = prompt("Enter name to search:");
+    //   if (name) {
+    //     window.location.href = `/search?name=${encodeURIComponent(name)}`;
+    //   }
+    // }
+
+    async function logoutUser(event) {
+      if (event) event.preventDefault();
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
+      try {
+        const response = await fetch("/logout", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          localStorage.removeItem("access_token");
+          window.location.href = "/login";
+        } else {
+          alert("Logout failed");
+        }
+      } catch (err) {
+        console.error("Logout error:", err);
+        alert("Something went wrong during logout.");
+      }
+    }
+
+    // --- Attendance Status Classification and Display (with all employees) ---
+    // Removed displayAttendanceStatus and its event listener as logic is now handled by backend
+  </script>
+</body>
+
+</html>

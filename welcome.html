@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welcome - Attendance System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #215790 50%, #a1c3e5 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .welcome-container {
+      position: relative;
+      width: 100%;
+      max-width: 450px;
+      overflow: hidden;
+      transition: height 0.4s ease;
+    }
+
+    .welcome-module {
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      padding: 50px 40px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .welcome-module::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+      z-index: 0;
+    }
+
+    .welcome-header {
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .welcome-header h1 {
+      color: #333;
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(to right, #215790 50%, #a1c3e5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .welcome-header p {
+      color: #777;
+      font-size: 18px;
+      line-height: 1.5;
+    }
+
+    .welcome-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #215790 50%, #a1c3e5 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      z-index: 1;
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 300px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .welcome-button {
+      width: 100%;
+      padding: 18px 24px;
+      background: linear-gradient(to right, #215790 100%, #a1c3e5 0%);
+      border: none;
+      border-radius: 50px;
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(37, 117, 252, 0.4);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .welcome-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
+      z-index: -1;
+    }
+
+    .welcome-button:hover::before {
+      left: 100%;
+    }
+
+    .welcome-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(37, 117, 252, 0.6);
+    }
+
+    .welcome-button:active {
+      transform: translateY(-1px);
+    }
+
+    .welcome-button.secondary {
+      background: linear-gradient(to right, #6c757d 100%, #adb5bd 0%);
+      box-shadow: 0 4px 15px rgba(108, 117, 125, 0.4);
+    }
+
+    .welcome-button.secondary:hover {
+      box-shadow: 0 6px 20px rgba(108, 117, 125, 0.6);
+    }
+
+    .welcome-button i {
+      font-size: 20px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #aaa;
+      font-size: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 480px) {
+      .welcome-module {
+        padding: 40px 30px;
+      }
+      
+      .welcome-header h1 {
+        font-size: 28px;
+      }
+      
+      .welcome-header p {
+        font-size: 16px;
+      }
+      
+      .welcome-icon {
+        font-size: 48px;
+      }
+      
+      .welcome-button {
+        padding: 16px 20px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="welcome-container">
+    <div class="welcome-module">
+      <div class="welcome-icon">
+      <img src="/static/image.png" alt="WM-Admin Logo" style="height: 40px; vertical-align: middle;">
+      </div>
+      
+      <div class="welcome-header">
+        
+        <p>Choose your action to get started with the attendance system</p>
+      </div>
+
+      <div class="button-group">
+        <button class="welcome-button" id="loginBtn">
+          <i class="fas fa-sign-in-alt"></i>
+          Login to Admin Panel
+        </button>
+        
+        <button class="welcome-button secondary" id="markAttendanceBtn">
+          <i class="fas fa-clock"></i>
+          Mark Attendance
+        </button>
+      </div>
+
+      <div class="footer">
+        <!-- <p>&copy; 2024 Attendance Management System</p> -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Login button functionality
+      document.getElementById('loginBtn').addEventListener('click', function() {
+        // Add a small delay for button animation
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 150);
+      });
+
+      // Mark attendance button functionality
+      document.getElementById('markAttendanceBtn').addEventListener('click', function() {
+        // Add a small delay for button animation
+        this.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          window.location.href = '/mark_attendance';
+        }, 150);
+      });
+
+      // Reset button scale on mouse up
+      document.querySelectorAll('.welcome-button').forEach(button => {
+        button.addEventListener('mouseup', function() {
+          this.style.transform = '';
+        });
+        
+        button.addEventListener('mouseleave', function() {
+          this.style.transform = '';
+        });
+      });
+    });
+  </script>
+</body>
+</html> 

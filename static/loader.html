@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loading...</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <div id="loader">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+  <div id="content" style="display:none"></div>
+  <script>
+    async function loadProtectedPage() {
+      const params = new URLSearchParams(window.location.search);
+      const page = params.get('page');
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        window.location.href = '/login';
+        return;
+      }
+      let endpoint;
+      switch (page) {
+        case 'dashboard': endpoint = '/admindashboard/home'; break;
+        case 'register': endpoint = '/admindashboard/register'; break;
+        case 'delete': endpoint = '/admindashboard/delete'; break;
+        case 'faces': endpoint = '/admindashboard/faces'; break;
+        case 'search_attendence': endpoint = '/admindashboard/search_attendence'; break;
+        case 'spreadsheet': endpoint = '/admindashboard/view_spreadsheet'; break;
+        case 'excel': endpoint = '/admindashboard/export_excel_landing'; break;
+        default: endpoint = '/admindashboard/home'; break;
+      }
+      try {
+        const res = await fetch(endpoint, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          if (res.status === 401) {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('token_type');
+          }
+          throw new Error('Unauthorized');
+        }
+        const html = await res.text();
+        // Extract only the <body> content
+        const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        const bodyContent = bodyMatch ? bodyMatch[1] : html;
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('content').style.display = 'block';
+        document.getElementById('content').innerHTML = bodyContent;
+        if (page === "dashboard"){
+          document.title="Home | WM-Admin";
+        } else if (page==="register"){
+          document.title = "Registration | WM-Admin";
+        } else if (page ==="delete"){
+          document.title = "Remove | WM-Admin";
+        } else if (page==="faces"){
+          document.title="Display Faces | WM-Admin";
+        } else if(page==="search_attendence"){
+          document.title="Search Attendance | WM-Admin";
+        } else if (page==="spreadsheet"){
+          document.title="View Spreadsheet | WM-Admin";
+        } else if (page==="excel"){
+          document.title="Download Excel | WM-Admin"
+        }
+
+        // 1. Load all external scripts first
+        const scripts = document.getElementById('content').querySelectorAll('script');
+        const externalScripts = [];
+        const inlineScripts = [];
+        scripts.forEach(script => {
+          if (script.src) {
+            externalScripts.push(script.src);
+          } else {
+            inlineScripts.push(script.textContent);
+          }
+        });
+
+        // Helper to load a script and return a promise
+        function loadScript(src) {
+          return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = reject;
+            document.body.appendChild(s);
+          });
+        }
+
+        // Load all external scripts in order
+        for (const src of externalScripts) {
+          await loadScript(src);
+        }
+
+        // Now execute all inline scripts
+        for (const code of inlineScripts) {
+          const s = document.createElement('script');
+          s.textContent = code;
+          document.body.appendChild(s);
+          document.body.removeChild(s);
+        }
+      } catch (e) {
+        window.location.href = '/login';
+      }
+    }
+    loadProtectedPage();
+
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) {
+        // Page was loaded from bfcache (back/forward cache)
+        window.location.reload();
+      }
+    });
+  </script>
+</body>
+</html> 

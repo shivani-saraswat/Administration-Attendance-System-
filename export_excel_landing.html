@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Export Attendance Data</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="./static/app.css">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-dark: #3a56d4;
+      --secondary: #4cc9f0;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --success: #4ade80;
+      --gray: #6c757d;
+      --light-gray: #e9ecef;
+      --border-radius: 16px;
+      --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+      min-height: 100vh;
+      color: var(--dark);
+      display: flex;
+      overflow-x: hidden;
+    }
+    
+    /* Sidebar styling */
+    .sidebar {
+      width: 260px;
+      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding: 30px 0;
+      box-shadow: var(--box-shadow);
+      z-index: 100;
+      transition: var(--transition);
+      overflow-y: auto;
+    }
+    
+    .sidebar-header {
+      padding: 0 25px 25px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .sidebar-header h2 {
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      font-size: 22px;
+    }
+    
+    .sidebar-header h2 i {
+      margin-right: 12px;
+      background: rgba(255,255,255,0.15);
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .sidebar ul {
+      list-style: none;
+      padding: 0 15px;
+    }
+    
+    .sidebar li {
+      margin-bottom: 5px;
+    }
+    
+    .sidebar a {
+      display: flex;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.85);
+      padding: 14px 20px;
+      text-decoration: none;
+      border-radius: 12px;
+      transition: var(--transition);
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .sidebar a:hover, .sidebar a.active {
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      transform: translateX(5px);
+    }
+    
+    .sidebar a i {
+      width: 30px;
+      font-size: 18px;
+      margin-right: 12px;
+    }
+    
+    .sidebar .submenu {
+      display: none;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      margin: 10px 0;
+      padding: 10px 0;
+    }
+    
+    .sidebar .submenu.enabled {
+      display: block;
+      animation: fadeIn 0.4s ease;
+    }
+    
+    .sidebar .submenu li {
+      margin-bottom: 0;
+    }
+    
+    .sidebar .submenu a {
+      padding: 10px 20px 10px 50px;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+    
+    .sidebar .submenu a:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    
+    /* Main content */
+    .main-content {
+      flex: 1;
+      margin-left: 260px;
+      padding: 40px;
+      transition: var(--transition);
+    }
+    
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+      position: relative;
+      display: inline-block;
+    }
+    
+    .header h1:after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      width: 60px;
+      height: 4px;
+      background: var(--secondary);
+      border-radius: 2px;
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 20px;
+    }
+    
+    /* Export container */
+    .export-container {
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      padding: 50px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .export-container:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+    
+    .export-icon {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, rgba(67, 97, 238, 0.1) 0%, rgba(76, 201, 240, 0.1) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 30px;
+      font-size: 50px;
+      color: var(--primary);
+      animation: pulse 2s infinite;
+    }
+    
+    .export-container h2 {
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: var(--dark);
+      font-size: 32px;
+    }
+    
+    .export-container p {
+      margin-bottom: 40px;
+      font-size: 18px;
+      color: var(--gray);
+      line-height: 1.6;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(to right, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 16px 40px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 18px;
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn-download:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: 0.5s;
+    }
+    
+    .btn-download:hover:after {
+      left: 100%;
+    }
+    
+    .btn-download:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(67, 97, 238, 0.4);
+    }
+    
+    .btn-download i {
+      margin-right: 12px;
+      font-size: 20px;
+    }
+    
+    /* Progress section */
+    .progress-container {
+      max-width: 600px;
+      margin: 50px auto 40px;
+      position: relative;
+    }
+    
+    .progress-bar {
+      height: 12px;
+      background: var(--light-gray);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 30px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--secondary), var(--success));
+      border-radius: 10px;
+      transition: width 1s ease;
+    }
+    
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      flex: 1;
+    }
+    
+    .step:not(:last-child):after {
+      content: '';
+      position: absolute;
+      top: 25px;
+      left: 60%;
+      width: 80%;
+      height: 2px;
+      background: var(--light-gray);
+      z-index: -1;
+    }
+    
+    .step.completed:after {
+      background: var(--success);
+    }
+    
+    .step-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 15px;
+      font-size: 20px;
+      color: var(--gray);
+      transition: var(--transition);
+      border: 2px solid var(--light-gray);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    
+    .step.active .step-icon {
+      background: var(--primary);
+      color: white;
+      transform: scale(1.1);
+      border-color: var(--primary);
+    }
+    
+    .step.completed .step-icon {
+      background: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+    
+    .step-text {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--gray);
+      text-align: center;
+    }
+    
+    .step.active .step-text {
+      color: var(--primary);
+      font-weight: 600;
+    }
+    
+    .step.completed .step-text {
+      color: var(--success);
+    }
+    
+    /* Success section */
+    .success-section {
+      margin-top: 40px;
+      padding: 30px;
+      background: rgba(76, 201, 240, 0.08);
+      border-radius: var(--border-radius);
+      border-left: 4px solid var(--success);
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    .success-section.show {
+      display: block;
+    }
+    
+    .success-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .success-icon {
+      font-size: 50px;
+      color: var(--success);
+      margin-right: 25px;
+    }
+    
+    .success-text h3 {
+      color: var(--dark);
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+    
+    .success-text p {
+      color: var(--gray);
+      margin-bottom: 0;
+      font-size: 17px;
+    }
+    
+    /* Animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    /* Toggle button */
+    #toggleSidebarBtn {
+      display: none;
+      position: fixed;
+      top: 25px;
+      left: 25px;
+      z-index: 1050;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+      border: none;
+      font-size: 22px;
+    }
+    
+    /* Responsive design */
+    @media (max-width: 992px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      
+      .sidebar.show {
+        transform: translateX(0);
+      }
+      
+      .main-content {
+        margin-left: 0;
+        padding: 30px 20px;
+      }
+      
+      #toggleSidebarBtn {
+        display: flex;
+      }
+      
+      .export-container {
+        padding: 40px 25px;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .export-container {
+        padding: 35px 20px;
+      }
+      
+      .export-container h2 {
+        font-size: 26px;
+      }
+      
+      .progress-steps {
+        flex-direction: column;
+        align-items: center;
+        gap: 35px;
+      }
+      
+      .step:not(:last-child):after {
+        display: none;
+      }
+      
+      .header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <!-- <h2><i class="fas fa-fingerprint"></i> WM-Admin</h2> -->
+      <img src="/static/webmobril-IT-White-logo.png" alt="WM-Admin Logo" style="height: 40px; vertical-align: middle;">
+    </div>
+    <ul>
+      <li><a href="loader.html?page=dashboard"><i class="fas fa-house"></i> Dashboard</a></li>
+      <li><a href="loader.html?page=register"><i class="fas fa-user-plus"></i> Register Face</a></li>
+      <li><a href="loader.html?page=delete"><i class="fas fa-user-minus"></i> Delete Face</a></li>
+      <li><a href="loader.html?page=faces"><i class="fas fa-users"></i> Show Faces</a></li>
+      <li>
+        <a href="#" onclick="toggleExportMenu()" id="exportMenuBtn" class="active">
+          <i class="fas fa-file-export"></i> Export Data
+        </a>
+        <ul class="submenu enabled" id="exportSubmenu">
+          <li><a href="loader.html?page=spreadsheet" id="spreadsheetBtn"><i class="fas fa-calendar-alt"></i> View Spreadsheet</a></li>
+          <li><a href="loader.html?page=excel" id="excelBtn" class="active"><i class="fas fa-file-excel"></i> Download Excel</a></li>
+        </ul>
+      </li>
+      <li><a href="loader.html?page=search_attendence"><i class="fas fa-search"></i> Search Attendance</a></li>
+      <li><a href="#" onclick="logoutUser(event)"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+    </ul>
+  </div>
+  
+  <!-- Toggle Button -->
+  <button id="toggleSidebarBtn" class="d-md-none">
+    <i class="fas fa-bars"></i>
+  </button>
+  
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="header">
+      <h1>Export Attendance Data</h1>
+      <div class="user-info">
+        <!-- <div class="user-avatar">AJ</div> -->
+      </div>
+    </div>
+    
+    <div class="export-container">
+      <div class="export-icon">
+        <i class="fas fa-file-excel"></i>
+      </div>
+      
+      <h2>Generate Excel Report</h2>
+      <p>We're preparing your comprehensive attendance report. This process may take a few moments as we compile all the data into a professional Excel format.</p>
+      
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="progress-steps">
+          <div class="step active" id="step1">
+            <div class="step-icon"><i class="fas fa-database"></i></div>
+            <div class="step-text">Collecting Data</div>
+          </div>
+          
+          <div class="step" id="step2">
+            <div class="step-icon"><i class="fas fa-cogs"></i></div>
+            <div class="step-text">Processing</div>
+          </div>
+          
+          <div class="step" id="step3">
+            <div class="step-icon"><i class="fas fa-file-excel"></i></div>
+            <div class="step-text">Creating Excel</div>
+          </div>
+          
+          <div class="step" id="step4">
+            <div class="step-icon"><i class="fas fa-check"></i></div>
+            <div class="step-text">Ready to Export</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="success-section" id="successSection">
+        <div class="success-content">
+          <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="success-text">
+            <h3>Export Completed Successfully!</h3>
+            <p>Your attendance report is ready for download.</p>
+          </div>
+        </div>
+      </div>
+      
+      <button class="btn-download" id="manualDownload">
+        <i class="fas fa-download"></i> Download Excel File
+      </button>
+    </div>
+  </div>
+  
+  <script>
+    // Sidebar toggle for mobile
+    let isExportEnabled = true;
+    function toggleExportMenu() {
+      const submenu = document.getElementById('exportSubmenu');
+      isExportEnabled = !isExportEnabled;
+      if (isExportEnabled) {
+        submenu.style.display = 'block';
+        submenu.classList.add('enabled');
+      } else {
+        submenu.style.display = 'none';
+        submenu.classList.remove('enabled');
+      }
+    }
+    
+    document.getElementById("toggleSidebarBtn").addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("show");
+    });
+    
+    document.addEventListener("click", function (e) {
+      const sidebar = document.getElementById("sidebar");
+      const toggleBtn = document.getElementById("toggleSidebarBtn");
+      if (
+        window.innerWidth <= 992 &&
+        !sidebar.contains(e.target) &&
+        !toggleBtn.contains(e.target)
+      ) {
+        sidebar.classList.remove("show");
+      }
+    });
+    
+    // Logout function
+    function logoutUser(event) {
+      if (event) event.preventDefault();
+      localStorage.removeItem('access_token');
+      window.location.href = '/login';
+    }
+    
+    // Download logic with progress animation
+    function triggerDownload() {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        alert('Please login first');
+        window.location.href = '/login';
+        return;
+      }
+      
+      // Show progress animation
+      const progressFill = document.getElementById('progressFill');
+      const steps = [document.getElementById('step1'), 
+                    document.getElementById('step2'), 
+                    document.getElementById('step3'), 
+                    document.getElementById('step4')];
+      
+      // Reset progress
+      progressFill.style.width = '0%';
+      steps.forEach((step, index) => {
+        if (index > 0) {
+          step.classList.remove('active', 'completed');
+        }
+      });
+      
+      // Animate progress
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 3;
+        progressFill.style.width = `${progress}%`;
+        
+        if (progress >= 25) {
+          steps[1].classList.add('active');
+          steps[1].classList.remove('completed');
+        }
+        if (progress >= 50) {
+          steps[2].classList.add('active');
+          steps[2].classList.remove('completed');
+        }
+        if (progress >= 75) {
+          steps[3].classList.add('active');
+          steps[3].classList.remove('completed');
+        }
+        
+        if (progress >= 100) {
+          clearInterval(interval);
+          
+          // Mark steps as completed
+          steps.forEach(step => {
+            step.classList.remove('active');
+            step.classList.add('completed');
+          });
+          
+          // Show success message
+          document.getElementById('successSection').classList.add('show');
+          
+          // Actually download the file
+          fetch('/export/excel', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+          .then(response => {
+            if (!response.ok) throw new Error('Export failed');
+            return response.blob();
+          })
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'attendance_report.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+          })
+          .catch(error => {
+            alert('Failed to export data. Please try again.');
+          });
+        }
+      }, 100);
+    }
+    
+    // Auto-download after 1 second
+    setTimeout(triggerDownload, 1000);
+    
+    // Manual download button
+    document.getElementById('manualDownload').addEventListener('click', function(e) {
+      e.preventDefault();
+      triggerDownload();
+    });
+  </script>
+</body>
+</html>
