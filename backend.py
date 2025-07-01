@@ -26,15 +26,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi import Depends, HTTPException, status, Request
 import pandas as pd
 import sqlite3
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 import face_recognition
-
-router = APIRouter()
-
-class ImageData(BaseModel):
-    imageData: str
-logger = logging.getLogger(__name__)
 
 # At startup or schedule this with a cron job / background task
 auto_mark_all_present_on_off_days()
@@ -604,38 +598,6 @@ async def attendance_list(date: str = Query(None), department: str = Query(None)
 @app.get("/")
 def root():
     return RedirectResponse(url="/welcome")
-
-# @app.post("/admindashboard/check_duplicate_face")
-# async def check_duplicate_face(data: ImageData, token: str = Depends(oauth2_scheme)):
-#     try:
-#         image_data = data.imageData.split(",")[1]
-#         img_bytes = base64.b64decode(image_data)
-#         nparr = np.frombuffer(img_bytes, np.uint8)
-#         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-#         new_encodings = face_recognition.face_encodings(img)
-#         if not new_encodings:
-#             raise HTTPException(status_code=400, detail="No face detected.")
-
-#         new_encoding = new_encodings[0]
-
-#         # Load existing face encodings from DB
-#         conn = sqlite3.connect('faces.db')
-#         cursor = conn.cursor()
-#         cursor.execute("SELECT encoding FROM users")
-#         rows = cursor.fetchall()
-#         conn.close()
-
-#         for row in rows:
-#             stored_encoding = np.frombuffer(row[0], dtype=np.float64)
-#             match_results = face_recognition.compare_faces([stored_encoding], new_encoding)
-#             if any(match_results):
-#                 return {"exists": True}
-
-#         return {"exists": False}
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/admindashboard/check_duplicate_face")
 async def check_duplicate_face(data: ImageData, token: str = Depends(oauth2_scheme)):
