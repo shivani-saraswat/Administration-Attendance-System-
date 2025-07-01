@@ -26,6 +26,9 @@ class FaceData(BaseModel):
 class FacesResponse(BaseModel):
     faces: list[FaceData]
 
+class ImageData(BaseModel):
+    imageData: str
+
 class AttendanceRecord(BaseModel):
     Emp_id: str
     Name: str
