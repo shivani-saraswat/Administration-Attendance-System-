@@ -9,6 +9,9 @@ import holidays
 from models1 import *
 from fastapi import HTTPException, status
 from io import BytesIO
+import calendar
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 def to_binary(image):
     _, buffer = cv2.imencode('.jpg', image)
@@ -133,14 +136,12 @@ def compare_is_off_day(date_str):
 
 def mark_attendance(SrNo):
     print(SrNo)
-    # now = datetime.now()
     now = datetime.now()
-    custom_date = datetime(2025, 7, 6, now.hour, now.minute, now.second, now.microsecond)
-    print(custom_date)
-    # current_date = now.strftime("%Y-%m-%d")
-    current_date = custom_date.strftime("%Y-%m-%d")
-    current_time = custom_date.strftime("%H:%M:%S")
-    # current_time = now.strftime("%H:%M:%S")
+    # now = datetime.now()
+    # custom_date = datetime(2025, 7, 6, now.hour, now.minute, now.second, now.microsecond)
+    # print(custom_date)
+    current_date = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M:%S")
 
     conn = sqlite3.connect('faces.db')
     cursor = conn.cursor()
@@ -377,9 +378,9 @@ def export_data_to_excel(purpose, filter_date=None, file_path='filtered_attendan
         SELECT 
             u.Emp_id,
             u.Name,
-            u.Department,
             u.Reporting_to,
             u.Location,
+            u.Department,
             u.Joining_date,
             a.date,
             a.in_time,
@@ -390,36 +391,114 @@ def export_data_to_excel(purpose, filter_date=None, file_path='filtered_attendan
     """, conn)
     conn.close()
 
-    def compute_working_hours(row):
-        try:
-            if pd.notna(row["in_time"]) and pd.notna(row["out_time"]):
-                in_time = datetime.strptime(row["in_time"], "%H:%M:%S")
-                out_time = datetime.strptime(row["out_time"], "%H:%M:%S")
-                return round((out_time - in_time).total_seconds() / 3600, 2)
-        except:
-            return None
+    # Convert date columns to datetime
+    df["date"] = pd.to_datetime(df["date"])
+    df["Joining_date"] = pd.to_datetime(df["Joining_date"], errors='coerce')
 
-    df["Working_Hours"] = df.apply(compute_working_hours, axis=1)
+    # Get all unique months in the data
+    df['month'] = df['date'].dt.to_period('M')
+    months = df['month'].dropna().unique()
 
-    def compute_status(hours):
-        if pd.isna(hours): return "Absent"
-        if hours >= 9: return "Present"
-        elif hours >= 4: return "Half Day"
-        return "Absent"
-
-    df["status"] = df["Working_Hours"].apply(compute_status)
-    df["Working_Hours"] = df["Working_Hours"].astype(str)
-
-    # ✅ Apply date filter if provided
-    if filter_date:
-        df = df[df["date"] == filter_date]
+    # Get all employees
+    employees = df[['Emp_id', 'Name', 'Reporting_to', 'Location', 'Joining_date']].drop_duplicates()
 
     if purpose == "download":
+        wb = Workbook()
+        wb.remove(wb.active)  # Remove default sheet
+        for month in months:
+            month_str = str(month)
+            month_df = df[df['month'] == month]
+            # Get all days in this month
+            year, mon = map(int, month_str.split('-'))
+            num_days = calendar.monthrange(year, mon)[1]
+            days = [datetime(year, mon, d+1).strftime('%d-%b-%y') for d in range(num_days)]
+            # Prepare data for this sheet
+            data = []
+            for _, emp in employees.iterrows():
+                row = [emp['Emp_id'], emp['Name'], emp['Reporting_to'], emp['Location'], emp['Joining_date'].strftime('%d-%b-%y') if pd.notna(emp['Joining_date']) else '']
+                emp_att = month_df[month_df['Emp_id'] == emp['Emp_id']]
+                att_map = {d.strftime('%d-%b-%y'): '' for d in pd.date_range(f'{year}-{mon:02d}-01', periods=num_days)}
+                for _, att in emp_att.iterrows():
+                    day_str = att['date'].strftime('%d-%b-%y')
+                    if pd.notna(att['in_time']) and pd.notna(att['out_time']):
+                        in_time = datetime.strptime(att['in_time'], "%H:%M:%S")
+                        out_time = datetime.strptime(att['out_time'], "%H:%M:%S")
+                        hours = (out_time - in_time).total_seconds() / 3600
+                        if hours >= 9:
+                            att_map[day_str] = 'P'
+                        elif hours >= 4:
+                            att_map[day_str] = 'HD'
+                        else:
+                            att_map[day_str] = 'A'
+                    else:
+                        att_map[day_str] = 'A'
+                row.extend([att_map[d] for d in days])
+                data.append(row)
+            # Create sheet
+            ws = wb.create_sheet(title=month.strftime('%b-%Y'))
+            # Header
+            headers = ['Employee Id', 'Full Name', 'Reporting To', 'Location', 'Joining Date'] + days
+            ws.append(headers)
+            # Style header
+            header_fill = PatternFill(start_color='B7E1CD', end_color='B7E1CD', fill_type='solid')
+            date_fill = PatternFill(start_color='00CFEF', end_color='00CFEF', fill_type='solid')
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col)
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(horizontal='center')
+                if col <= 5:
+                    cell.fill = header_fill
+                else:
+                    cell.fill = date_fill
+                cell.border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+            # Data rows
+            for row in data:
+                ws.append(row)
+            # Style data
+            for r in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
+                for c in r:
+                    c.alignment = Alignment(horizontal='center')
+                    c.border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+            # Set column widths
+            for col in ws.columns:
+                max_length = 0
+                col_letter = col[0].column_letter
+                for cell in col:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                ws.column_dimensions[col_letter].width = max_length + 2
+        # Save to BytesIO
         output = BytesIO()
-        df.to_excel(output, index=False)
+        wb.save(output)
         output.seek(0)
         return output.getvalue()
     elif purpose == "view":
+        # Restore previous logic for view
+        def compute_working_hours(row):
+            try:
+                if pd.notna(row["in_time"]) and pd.notna(row["out_time"]):
+                    in_time = datetime.strptime(row["in_time"], "%H:%M:%S")
+                    out_time = datetime.strptime(row["out_time"], "%H:%M:%S")
+                    return round((out_time - in_time).total_seconds() / 3600, 2)
+            except:
+                return None
+        df["Working_Hours"] = df.apply(compute_working_hours, axis=1)
+        def compute_status(hours):
+            if pd.isna(hours): return "Absent"
+            if hours >= 9: return "Present"
+            elif hours >= 4: return "Half Day"
+            return "Absent"
+        df["status"] = df["Working_Hours"].apply(compute_status)
+        df["Working_Hours"] = df["Working_Hours"].astype(str)
+        # Apply date filter if provided
+        if filter_date:
+            df = df[df["date"] == filter_date]
+        # Convert datetime columns to string for API response
+        df["Joining_date"] = df["Joining_date"].dt.strftime("%Y-%m-%d")
+        df["date"] = df["date"].dt.strftime("%Y-%m-%d")
         return df.to_dict(orient="records")
 
 def check_blacklist_status(token):
