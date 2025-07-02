@@ -11,6 +11,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import EmailStr
 from models1 import *
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import atexit
 from base64 import b64encode
 import base64
 import cv2
@@ -38,7 +41,18 @@ sp = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
 facerec = dlib.face_recognition_model_v1('dlib_face_recognition_resnet_model_v1.dat')
 
 # At startup or schedule this with a cron job / background task
-auto_mark_all_present_on_off_days()
+
+scheduler = BackgroundScheduler(timezone="Asia/Kolkata")
+scheduler.add_job(
+    func = auto_mark_all_present_on_off_days,
+    trigger = CronTrigger(hour=0, minute=5),
+    name = "Auto-mark Attendance on Off Days"
+)
+scheduler.start()
+
+atexit.register(lambda: scheduler.shutdown())
+
+# auto_mark_all_present_on_off_days()
 load_dotenv()
 app = FastAPI()
 

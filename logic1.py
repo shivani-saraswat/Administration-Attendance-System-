@@ -1,5 +1,6 @@
 #logic.py
 import cv2
+import pytz
 import sqlite3
 import numpy as np
 import face_recognition
@@ -116,7 +117,9 @@ def get_face_encodings_from_db():
     return encodings, metadata
 
 def is_off_day():
-    today = datetime.now().date()
+    tz = pytz.timezone('Asia/Kolkata')
+    now = datetime.now(tz)
+    today = now.date()
     # india_holidays = holidays.India(year=today.year)
     india_holidays = holidays.country_holidays('IN')
     # return today in india_holidays or today.weekday() >= 5
@@ -136,7 +139,8 @@ def compare_is_off_day(date_str):
 
 def mark_attendance(SrNo):
     print(SrNo)
-    now = datetime.now()
+    tz = pytz.timezone('Asia/Kolkata')
+    now = datetime.now(tz)
     # now = datetime.now()
     # custom_date = datetime(2025, 7, 6, now.hour, now.minute, now.second, now.microsecond)
     # print(custom_date)
@@ -184,13 +188,15 @@ def mark_attendance(SrNo):
 #         return {"message": "Today is not off"}
 #     return {"message": "Today is holiday"}
 
+
 def auto_mark_all_present_on_off_days():
+    tz = pytz.timezone('Asia/Kolkata')
     if not is_off_day():
         return "Today is a working day. No auto-marking."
 
     conn = sqlite3.connect("faces.db")
     cursor = conn.cursor()
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = datetime.now(tz).strftime("%Y-%m-%d")
 
     # Get all employee SrNo
     cursor.execute("SELECT SrNo FROM users")
