@@ -87,7 +87,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 init_db()
 if not get_user_from_db(emp_id="WM-0", query=["*"]):
     hashed = pwd_context.hash("admin123")
-    insert_into_userDB("","","Noida", "gusainom77@gmail.com","WM-0", "Admin User", "", hashed, "admin")
+    insert_into_userDB("","","Noida", "alt.tu-2jhdct9@yopmail.com","WM-0", "Admin User", "", hashed, "admin")
 
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
@@ -311,7 +311,7 @@ def mark_attendance_page():
 
 def send_email(recipient_email: str, link):
     msg = EmailMessage()
-    msg["Subject"] = "Test Email from FastAPI"
+    msg["Subject"] = "Password Reset Request"
     msg["From"] = EMAIL_ADDRESS
     msg["To"] = recipient_email
     reset_token = create_reset_token(recipient_email)
@@ -409,7 +409,7 @@ async def mark_attendance_api(file: UploadFile = File(...)):
                 mark_attendance(sr_no)
                 return {"message": "Attendance marked"}
         
-        return JSONResponse(content={"message": "Face not recognized"}, status_code=404)
+        return JSONResponse(content={"message": "Face not recognized", "status": "danger"}, status_code=404)
     except Exception as e:
         logger.exception("Attendance marking failed")
         return JSONResponse(

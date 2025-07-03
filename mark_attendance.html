@@ -357,7 +357,14 @@
             });
             
             const result = await response.json();
-            showAlert(result.message || "Attendance marked successfully!", "success");
+            if (
+              (result.status && result.status === "danger") ||
+              (result.message && result.message.toLowerCase().includes("face not recognized"))
+            ) {
+              showAlert(result.message, "danger");
+            } else {
+              showAlert(result.message || "Attendance marked successfully!", "success");
+            }
           } catch (err) {
             console.error(err);
             showAlert("Error marking attendance. Please try again.", "danger");

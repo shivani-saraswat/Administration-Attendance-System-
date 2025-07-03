@@ -3,7 +3,7 @@ import cv2
 import pytz
 import sqlite3
 import numpy as np
-import face_recognition
+# import face_recognition
 from datetime import datetime
 import pandas as pd
 import holidays
@@ -82,7 +82,7 @@ def init_db():
 def id_exists(Emp_id):
     conn = sqlite3.connect('faces.db')
     cursor = conn.cursor()
-    cursor.execute("SELECT Emp_id FROM users WHERE Emp_id = ?", (Emp_id,))
+    cursor.execute("SELECT Emp_id FROM users WHERE Emp_id = ? COLLATE NOCASE", (Emp_id,))
     exists = cursor.fetchone() is not None
     conn.close()
     return exists
@@ -90,7 +90,7 @@ def id_exists(Emp_id):
 def save_face_to_db(emp_id, face_img, image_en):
     conn = sqlite3.connect('faces.db')
     cursor = conn.cursor()
-    cursor.execute("Select SrNo from users where Emp_id = ?", (emp_id,))
+    cursor.execute("Select SrNo from users where Emp_id = ? COLLATE NOCASE", (emp_id,))
     row = cursor.fetchone()
     srno = int(row[0])
     cursor.execute("""
@@ -247,7 +247,7 @@ def delete_face_by_id(Emp_id):
     # Get user data before deleting
     cursor.execute("""
         SELECT SrNo, Reporting_to, Joining_date, Location, Email, Emp_id, Name, Department 
-        FROM users WHERE Emp_id = ?
+        FROM users WHERE Emp_id = ? COLLATE NOCASE
     """, (Emp_id,))
     user_data = cursor.fetchone()
 
@@ -272,7 +272,7 @@ def delete_face_by_id(Emp_id):
             Department = NULL,
             Password = NULL,
             Role = NULL
-        WHERE Emp_id = ?
+        WHERE Emp_id = ? COLLATE NOCASE
     """, (Emp_id,))
 
     conn.commit()
@@ -729,7 +729,7 @@ def get_user_from_db(emp_id: Optional[str] = None, email: Optional[str] = None, 
 
     if emp_id:
         # print("I am here")
-        cursor.execute(f"SELECT {', '.join(query)} FROM users WHERE {option['emp_id']} = ?", (emp_id,))
+        cursor.execute(f"SELECT {', '.join(query)} FROM users WHERE {option['emp_id']} = ? COLLATE NOCASE", (emp_id,))
     elif email:
         cursor.execute(f"SELECT {', '.join(query)} FROM users WHERE {option['email']} = ?", (email,))
     else:
